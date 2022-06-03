@@ -6,3 +6,4 @@ tensorflow-datasets
 active-semi-supervised-clustering
 shap
 lime
+imagehash
