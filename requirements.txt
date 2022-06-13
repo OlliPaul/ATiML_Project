@@ -7,3 +7,4 @@ active-semi-supervised-clustering
 shap
 lime
 imagehash
+scikit-learn-extra
