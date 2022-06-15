@@ -8,3 +8,4 @@ shap
 lime
 imagehash
 scikit-learn-extra
+seaborn
