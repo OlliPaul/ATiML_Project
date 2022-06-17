@@ -1,3 +1,5 @@
+import types
+
 import cv2 as cv
 import numpy as np
 import tensorflow as tf
@@ -33,7 +35,7 @@ def color_layout_descriptor(im, rows_cld, columns_cld):
     rows = rows_cld
     columns = columns_cld
     zigzag_flat = create_zigzag_flat(rows_cld, columns_cld)
-    small_image = np.zeros((rows, columns, 3))
+    small_image = np.zeros((rows, columns, 3),dtype=np.float32)
     height, width = im.shape[:2]
     percentage_w = width / columns
     percentage_h = height / rows
@@ -42,10 +44,10 @@ def color_layout_descriptor(im, rows_cld, columns_cld):
             # Note this partion should propably be checked against a reference implementation. However the difference should be minimal
             portion = im[int(percentage_h * row):int(percentage_h * (row + 1)),
                       int(percentage_w * column):int(percentage_w * (column + 1))]
-            small_image[row, column] = np.mean(np.mean(portion, axis=0), axis=0)
+            small_image[row, column] = np.mean(np.mean(portion, axis=0), axis=0)/255.0
 
-    small_image = cv.cvtColor(small_image.astype(np.uint8), cv.COLOR_RGB2BGR)
-    small_image = cv.cvtColor(small_image.astype(np.uint8), cv.COLOR_BGR2YCrCb)
+    small_image = cv.cvtColor(small_image, cv.COLOR_RGB2BGR)
+    small_image = cv.cvtColor(small_image, cv.COLOR_BGR2YCrCb)
     y, cr, cb = cv.split(small_image)
     dct_y = cv.dct(y.astype(np.float32))
     dct_cb = cv.dct(cb.astype(np.float32))
@@ -322,6 +324,9 @@ def cluster_histogramm(data, predicted_values, y, use_all=True):
 
     return counter
 
+def initialize_cluster_centers(self, X, neighborhoods):
+    cluster_centers = X[np.random.choice(X.shape[0], self.n_clusters, replace=False), :]
+    return cluster_centers
 
 def calculate_score_per_query(data,filtered_list,n_cluster,y,power_of_query_count=5,tries=1,weight=500,use_explore_consolidate=False,max_querry=True):
     values_random=[]
@@ -355,6 +360,7 @@ def calculate_score_per_query(data,filtered_list,n_cluster,y,power_of_query_coun
                     pairwise_constraints =([],[])
                 pck = PCKMeans(n_clusters=n_cluster,max_iter=100,w=weight)
                 try:
+                    pck._initialize_cluster_centers = types.MethodType(initialize_cluster_centers, pck)
                     pck.fit(data, ml=pairwise_constraints[0], cl=pairwise_constraints[1])
                     values_random_per_try.append(metrics.adjusted_rand_score(y, pck.labels_))
                     values_sil_per_try.append(metrics.silhouette_score(data, pck.labels_, metric='euclidean'))
