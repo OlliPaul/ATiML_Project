@@ -4,6 +4,7 @@ from active_semi_clustering.semi_supervised.pairwise_constraints import PCKMeans
 import numpy as np
 from sklearn import metrics
 import active_semi_clustering.active.pairwise_constraints.random
+
 def calculate_label_area(objects, labels):
     obj_labels = objects["label"]
     obj_boundingbox = objects["bbox"]
@@ -64,46 +65,7 @@ class LabelOracle:
             raise MaximumQueriesExceeded
 
 
-def task(data,filtered_list,n_cluster,y,power_of_query_count=5,tries=1,use_explore_consolidate=False):
-    values_random=[]
-    values_sil=[]
-    querry_counts=[]
-    for i in range (power_of_query_count):
-        cnt=100*(2**(i))
-        querry_counts.append(cnt)
-        values_random_per_try=[]
-        values_sil_per_try=[]
 
-        for k in range(tries):
-
-            #Gives way more constraints by trying to find neighboorhoods, but ammount is random
-            #active_learner = active_semi_clustering.active.pairwise_constraints.explore_consolidate.ExploreConsolidate(n_clusters=20)
-            fitted=False
-            while (not fitted):
-                oracle = LabelOracle(filtered_list, max_queries_cnt=cnt,max_querry=True)
-                if(use_explore_consolidate):
-                     active_learner = active_semi_clustering.active.pairwise_constraints.explore_consolidate.ExploreConsolidate(n_clusters=n_cluster)
-                else:
-                    active_learner = active_semi_clustering.active.pairwise_constraints.random.Random(n_clusters=n_cluster)
-                active_learner.fit(data, oracle)
-                pairwise_constraints = active_learner.pairwise_constraints_
-                pck = PCKMeans(n_clusters=n_cluster,max_iter=100,w=500)
-                try:
-                    pck.fit(data, ml=pairwise_constraints[0], cl=pairwise_constraints[1])
-                    values_random_per_try.append(metrics.adjusted_rand_score(y, pck.labels_))
-                    values_sil_per_try.append(metrics.silhouette_score(data, pck.labels_, metric='euclidean'))
-                    fitted=True
-                except Exception as e:
-                    if str(e) == "KeyboardInterrupt":
-                        raise
-                    else:
-                        print(str(e))
-                    pass
-        values_random.append(values_random_per_try)
-        values_sil.append(values_sil_per_try)
-        print(np.mean(values_random_per_try))
-        print(np.mean(values_sil_per_try))
-    return values_random,values_sil,querry_counts
 
 from functools import partial
 import inspect
