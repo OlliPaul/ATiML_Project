@@ -323,7 +323,7 @@ def cluster_histogramm(data, predicted_values, y, use_all=True):
     return counter
 
 
-def calculate_score_per_query(data,filtered_list,n_cluster,y,power_of_query_count=5,tries=1,use_explore_consolidate=False):
+def calculate_score_per_query(data,filtered_list,n_cluster,y,power_of_query_count=5,tries=1,weight=500,use_explore_consolidate=False,max_querry=True):
     values_random=[]
     values_sil=[]
     querry_counts=[]
@@ -339,14 +339,14 @@ def calculate_score_per_query(data,filtered_list,n_cluster,y,power_of_query_coun
             #active_learner = active_semi_clustering.active.pairwise_constraints.explore_consolidate.ExploreConsolidate(n_clusters=20)
             fitted=False
             while (not fitted):
-                oracle = LabelOracle(filtered_list, max_queries_cnt=cnt,max_querry=True)
+                oracle = LabelOracle(filtered_list, max_queries_cnt=cnt,max_querry=max_querry)
                 if(use_explore_consolidate):
                      active_learner = active_semi_clustering.active.pairwise_constraints.explore_consolidate.ExploreConsolidate(n_clusters=n_cluster)
                 else:
                     active_learner = active_semi_clustering.active.pairwise_constraints.random.Random(n_clusters=n_cluster)
                 active_learner.fit(data, oracle)
                 pairwise_constraints = active_learner.pairwise_constraints_
-                pck = PCKMeans(n_clusters=n_cluster,max_iter=100,w=500)
+                pck = PCKMeans(n_clusters=n_cluster,max_iter=100,w=weight)
                 try:
                     pck.fit(data, ml=pairwise_constraints[0], cl=pairwise_constraints[1])
                     values_random_per_try.append(metrics.adjusted_rand_score(y, pck.labels_))
