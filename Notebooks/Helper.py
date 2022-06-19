@@ -203,7 +203,7 @@ class ExpertOracle:
 
             # The synchronised content blocks while waiting for unsynchronized one, not sure if there is a way around this
             # x = asyncio.run(f(self.buttonAcc,self.buttonRej))
-
+            print("Input Y for must link every other input is means cannot link")
             # now i use busy waiting which needs another thread
             f, ax = plt.subplots(1, 2)
             ax[0].imshow(self.data[i]["image"])
