@@ -328,7 +328,19 @@ def initialize_cluster_centers(self, X, neighborhoods):
     cluster_centers = X[np.random.choice(X.shape[0], self.n_clusters, replace=False), :]
     return cluster_centers
 
-def calculate_score_per_query(data,filtered_list,n_cluster,y,power_of_query_count=5,tries=1,weight=500,use_explore_consolidate=False,max_querry=True):
+
+def calculate_percentage_of_constraints_score(clf,constraints):
+    counter = 0.0
+    for i in constraints[0]:
+        if clf.labels_[i[0]] == clf.labels_[i[1]]: counter += 1
+    mlscore=counter / len(constraints[0])
+    counter = 0.0
+    for i in constraints[1]:
+        if clf.labels_[i[0]] != clf.labels_[i[1]]: counter += 1
+    clscore=counter / len(constraints[1])
+    return mlscore,clscore
+
+def calculate_score_per_query(data,filtered_list,n_cluster,y,power_of_query_count=5,tries=1,weight=1280,use_explore_consolidate=False,max_querry=True,use_random_init=False):
     values_random=[]
     values_sil=[]
     querry_counts=[]
@@ -360,9 +372,19 @@ def calculate_score_per_query(data,filtered_list,n_cluster,y,power_of_query_coun
                     pairwise_constraints =([],[])
                 pck = PCKMeans(n_clusters=n_cluster,max_iter=100,w=weight)
                 try:
-                    pck._initialize_cluster_centers = types.MethodType(initialize_cluster_centers, pck)
+                    if use_random_init:
+                        pck._initialize_cluster_centers = types.MethodType(initialize_cluster_centers, pck)
                     pck.fit(data, ml=pairwise_constraints[0], cl=pairwise_constraints[1])
-                    values_random_per_try.append(metrics.adjusted_rand_score(y, pck.labels_))
+                    if max_querry:
+                        values_random_per_try.append(metrics.adjusted_rand_score(y, pck.labels_))
+                    else:
+                        oracle2 = LabelOracle(filtered_list, max_queries_cnt=10000, max_querry=False)
+                        active_learner2 = active_semi_clustering.active.pairwise_constraints.random.Random(
+                            n_clusters=n_cluster)
+                        active_learner2.fit(data, oracle2)
+                        pairwise_constraints2 = active_learner2.pairwise_constraints_
+
+                        values_random_per_try.append(calculate_percentage_of_constraints_score(pck,pairwise_constraints2)[0])
                     values_sil_per_try.append(metrics.silhouette_score(data, pck.labels_, metric='euclidean'))
                     fitted=True
                 except Exception as e:
@@ -378,5 +400,3 @@ def calculate_score_per_query(data,filtered_list,n_cluster,y,power_of_query_coun
 
     return values_random,values_sil,querry_counts
 
-def gsf():
-    pass

@@ -9,3 +9,5 @@ lime
 imagehash
 scikit-learn-extra
 seaborn
+scikit-image
+numpy
